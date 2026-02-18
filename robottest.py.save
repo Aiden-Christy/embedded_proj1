@@ -1,0 +1,25 @@
+import maestro as ms
+import time
+
+try:
+    servo = ms.Controller()
+except Exception as e:
+    print(f"Error establishing controller: {e}")
+    exit
+
+print("Maestro Controller Connected...")
+
+
+servo.setTarget(1, 5000)
+
+servo.setSpeed(0, 2)
+
+time.sleep(1)
+
+x = servo.getPosition(0)
+
+print(f"Servo on channel 0 is at position {x}")
+
+
+servo.close()
+

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Robot Joystick Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .header {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .status {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .joystick-and-buttons-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px auto;
+            max-width: 900px;
+        }
+
+        .left-side {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .right-side {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .joystick-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            flex-shrink: 0;
+        }
+
+        .joystick-outer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5),
+                        inset 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .joystick-center-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        .joystick-inner {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 4px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+            touch-action: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .joystick-inner:active {
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .joystick-inner::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            filter: blur(10px);
+        }
+
+        .direction-indicators {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .direction-label {
+            position: absolute;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0.6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dir-up { top: -30px; left: 50%; transform: translateX(-50%); }
+        .dir-down { bottom: -30px; left: 50%; transform: translateX(-50%); }
+        .dir-left { left: -50px; top: 50%; transform: translateY(-50%); }
+        .dir-right { right: -50px; top: 50%; transform: translateY(-50%); }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: normal;
+            text-align: center;
+            line-height: 1.3;
+            min-width: 100px;
+        }
+
+        .btn-stop {
+            background: #f44336;
+            color: white;
+            font-size: 16px;
+            padding: 20px 15px;
+            height: 300px;
+            width: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-stop:active {
+            background: #d32f2f;
+            transform: scale(0.95);
+        }
+
+        .btn-home {
+            background: #2196F3;
+            color: white;
+            padding: 12px 30px;
+        }
+
+        .btn-home:active {
+            background: #1976D2;
+            transform: scale(0.95);
+        }
+
+        .btn-voice {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 12px;
+            font-size: 13px;
+            width: 100px;
+            height: 68px;
+        }
+
+        .btn-voice:active {
+            background: linear-gradient(135deg, #5568d3 0%, #63398d 100%);
+            transform: scale(0.95);
+        }
+
+        .btn-voice:hover {
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .info-panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            min-width: 250px;
+            text-align: center;
+        }
+
+        .sliders-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .slider-label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider:active::-webkit-slider-thumb {
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.8);
+        }
+
+        .slider:active::-moz-range-thumb {
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.8);
+        }
+
+        .slider-value {
+            display: inline-block;
+            margin-top: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            opacity: 0.7;
+        }
+
+        .info-value {
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .footer {
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.7;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .joystick-and-buttons-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .left-side {
+                order: 3;
+            }
+
+            .joystick-container {
+                order: 1;
+                width: 250px;
+                height: 250px;
+            }
+
+            .right-side {
+                order: 2;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .btn-stop {
+                width: 200px;
+                height: 60px;
+            }
+
+            .btn-voice {
+                width: 110px;
+                height: 60px;
+            }
+
+            .joystick-inner {
+                width: 100px;
+                height: 100px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) {
+            .joystick-container {
+                width: 200px;
+                height: 200px;
+            }
+
+            .main-content {
+                padding: 10px;
+            }
+
+            .info-panel {
+                margin-top: 10px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 Robot Control</h1>
+        <div class="status">
+            <span class="status-indicator"></span>
+            <span id="connection-status">Connected</span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="joystick-and-buttons-container">
+            <!-- Left side: Emergency Stop -->
+            <div class="left-side">
+                <button class="btn btn-stop" id="stop-btn">⏹<br>Emergency<br>Stop</button>
+            </div>
+
+            <!-- Center: Joystick -->
+            <div class="joystick-container">
+                <div class="joystick-outer">
+                    <div class="joystick-center-marker"></div>
+                    <div class="direction-indicators">
+                        <div class="direction-label dir-up">Forward</div>
+                        <div class="direction-label dir-down">Reverse</div>
+                        <div class="direction-label dir-left">Left</div>
+                        <div class="direction-label dir-right">Right</div>
+                    </div>
+                </div>
+                <div class="joystick-inner" id="joystick"></div>
+            </div>
+
+            <!-- Right side: Voice buttons -->
+            <div class="right-side">
+                <button class="btn btn-voice" id="voice-btn-1">🎤<br>Lifestyle</button>
+                <button class="btn btn-voice" id="voice-btn-2">💖<br>Charm</button>
+                <button class="btn btn-voice" id="voice-btn-3">🤖<br>Soul</button>
+                <button class="btn btn-voice" id="voice-btn-4">🍪<br>Cookies</button>
+            </div>
+        </div>
+
+        <div class="sliders-container">
+            <div class="slider-group">
+                <label class="slider-label">Head Horizontal</label>
+                <input type="range" id="headH-slider" min="4000" max="8000" value="6000" class="slider">
+                <span class="slider-value" id="headH-value">6000</span>
+            </div>
+            
+            <div class="slider-group">
+                <label class="slider-label">Head Vertical</label>
+                <input type="range" id="headV-slider" min="4000" max="8000" value="6000" class="slider">
+                <span class="slider-value" id="headV-value">6000</span>
+            </div>
+            
+            <div class="slider-group">
+                <label class="slider-label">Waist</label>
+                <input type="range" id="waist-slider" min="4000" max="8000" value="6000" class="slider">
+                <span class="slider-value" id="waist-value">6000</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-home" id="home-btn">🏠 Home</button>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-row">
+                <span class="info-label">X Position:</span>
+                <span class="info-value" id="x-value">0.00</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Y Position:</span>
+                <span class="info-value" id="y-value">0.00</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Distance:</span>
+                <span class="info-value" id="distance-value">0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Use joystick to control robot • Arcade drive mode
+    </div>
+
+    <script>
+        // Joystick control
+        const joystick = document.getElementById('joystick');
+        const container = document.querySelector('.joystick-container');
+        const outer = document.querySelector('.joystick-outer');
+        
+        let isDragging = false;
+        let centerX = 0;
+        let centerY = 0;
+        let maxRadius = 0;
+        let currentX = 0;
+        let currentY = 0;
+        
+        // Calculate boundaries
+        function updateBoundaries() {
+            const containerRect = container.getBoundingClientRect();
+            const joystickRect = joystick.getBoundingClientRect();
+            
+            centerX = containerRect.width / 2;
+            centerY = containerRect.height / 2;
+            maxRadius = (containerRect.width - joystickRect.width) / 2;
+        }
+        
+        updateBoundaries();
+        window.addEventListener('resize', updateBoundaries);
+        
+        // Get position from event (works for both mouse and touch)
+        function getEventPosition(e) {
+            if (e.touches && e.touches.length > 0) {
+                return {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY
+                };
+            }
+            return {
+                x: e.clientX,
+                y: e.clientY
+            };
+        }
+        
+        // Update joystick position
+        function updateJoystickPosition(clientX, clientY) {
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate position relative to center
+            let deltaX = clientX - containerRect.left - centerX;
+            let deltaY = clientY - containerRect.top - centerY;
+            
+            // Calculate distance from center
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Constrain to circle boundary
+            if (distance > maxRadius) {
+                const angle = Math.atan2(deltaY, deltaX);
+                deltaX = Math.cos(angle) * maxRadius;
+                deltaY = Math.sin(angle) * maxRadius;
+            }
+            
+            // Update joystick visual position
+            joystick.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+            
+            // Calculate normalized values (-1 to 1)
+            currentX = deltaX / maxRadius;
+            currentY = -deltaY / maxRadius; // Invert Y so up is positive
+            
+            // Update display
+            updateDisplay();
+            
+            // Send to server
+            sendJoystickPosition();
+        }
+        
+        // Return joystick to center
+        function returnToCenter() {
+            joystick.style.transform = 'translate(-50%, -50%)';
+            currentX = 0;
+            currentY = 0;
+            updateDisplay();
+            sendJoystickPosition();
+        }
+        
+        // Start dragging
+        function startDrag(e) {
+            e.preventDefault();
+            isDragging = true;
+            const pos = getEventPosition(e);
+            updateJoystickPosition(pos.x, pos.y);
+        }
+        
+        // During drag
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const pos = getEventPosition(e);
+            updateJoystickPosition(pos.x, pos.y);
+        }
+        
+        // End drag
+        function endDrag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            isDragging = false;
+            returnToCenter();
+        }
+        
+        // Mouse events
+        joystick.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+        
+        // Touch events
+        joystick.addEventListener('touchstart', startDrag);
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('touchend', endDrag);
+        
+        // Update display values
+        function updateDisplay() {
+            document.getElementById('x-value').textContent = currentX.toFixed(2);
+            document.getElementById('y-value').textContent = currentY.toFixed(2);
+            
+            const distance = Math.sqrt(currentX * currentX + currentY * currentY);
+            document.getElementById('distance-value').textContent = distance.toFixed(2);
+        }
+        
+        // Send joystick position to server
+        let lastSendTime = 0;
+        const sendInterval = 50; // Send every 50ms (20Hz)
+        
+        function sendJoystickPosition() {
+            const now = Date.now();
+            if (now - lastSendTime < sendInterval) {
+                return; // Throttle requests
+            }
+            lastSendTime = now;
+            
+            fetch('/api/joystick', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    x: currentX,
+                    y: currentY
+                })
+            })
+            .catch(err => {
+                console.error('Error sending joystick position:', err);
+                updateConnectionStatus(false);
+            });
+        }
+        
+        // Button controls
+        document.getElementById('stop-btn').addEventListener('click', () => {
+            fetch('/api/stop', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Stop command sent:', data);
+                returnToCenter();
+                // Reset sliders to center
+                document.getElementById('headH-slider').value = 6000;
+                document.getElementById('headV-slider').value = 6000;
+                document.getElementById('waist-slider').value = 6000;
+                updateSliderDisplays();
+            })
+            .catch(err => console.error('Error stopping:', err));
+        });
+        
+        document.getElementById('home-btn').addEventListener('click', () => {
+            if (confirm('Move all servos to home position?')) {
+                fetch('/api/home', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Home command sent:', data);
+                })
+                .catch(err => console.error('Error homing:', err));
+            }
+        });
+
+        // Slider controls
+        const headHSlider = document.getElementById('headH-slider');
+        const headVSlider = document.getElementById('headV-slider');
+        const waistSlider = document.getElementById('waist-slider');
+
+        function updateSliderDisplays() {
+            document.getElementById('headH-value').textContent = headHSlider.value;
+            document.getElementById('headV-value').textContent = headVSlider.value;
+            document.getElementById('waist-value').textContent = waistSlider.value;
+        }
+
+        function sendSliderValues() {
+            fetch('/api/sliders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    headH: parseInt(headHSlider.value),
+                    headV: parseInt(headVSlider.value),
+                    waist: parseInt(waistSlider.value)
+                })
+            })
+            .catch(err => console.error('Error sending slider values:', err));
+        }
+
+        // Update displays and send values when sliders change
+        headHSlider.addEventListener('input', () => {
+            updateSliderDisplays();
+            sendSliderValues();
+        });
+
+        headVSlider.addEventListener('input', () => {
+            updateSliderDisplays();
+            sendSliderValues();
+        });
+
+        waistSlider.addEventListener('input', () => {
+            updateSliderDisplays();
+            sendSliderValues();
+        });
+
+        // Initialize slider displays
+        updateSliderDisplays();
+
+        // Voice button controls
+        document.getElementById('voice-btn-1').addEventListener('click', () => {
+            fetch('/api/voice/1', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => console.log('Voice line 1:', data.line))
+            .catch(err => console.error('Error playing voice:', err));
+        });
+
+        document.getElementById('voice-btn-2').addEventListener('click', () => {
+            fetch('/api/voice/2', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => console.log('Voice line 2:', data.line))
+            .catch(err => console.error('Error playing voice:', err));
+        });
+
+        document.getElementById('voice-btn-3').addEventListener('click', () => {
+            fetch('/api/voice/3', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => console.log('Voice line 3:', data.line))
+            .catch(err => console.error('Error playing voice:', err));
+        });
+
+        document.getElementById('voice-btn-4').addEventListener('click', () => {
+            fetch('/api/voice/4', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => console.log('Voice line 4:', data.line))
+            .catch(err => console.error('Error playing voice:', err));
+        });
+        
+        // Connection status
+        function updateConnectionStatus(connected) {
+            const indicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('connection-status');
+            
+            if (connected) {
+                indicator.style.background = '#4CAF50';
+                statusText.textContent = 'Connected';
+            } else {
+                indicator.style.background = '#f44336';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+        
+        // Check connection status periodically
+        setInterval(() => {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    updateConnectionStatus(data.connected);
+                })
+                .catch(err => {
+                    updateConnectionStatus(false);
+                });
+        }, 2000);
+        
+        // Initialize
+        updateDisplay();
+        console.log('Robot joystick controller initialized');
+    </script>
+</body>
+</html>
