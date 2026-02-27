@@ -18,7 +18,21 @@ def nod_yes(servo, nods=2, offset=1000, step=50, delay=0.02):
     # Return to center (already there, but just in case)
     robotfuncs.moveHeadV(servo, robotfuncs.CENTER)
 
+def shake_no(servo, shakes=2, offset=1000, step=50, delay=0.02):
+    left = robotfuncs.CENTER - offset
+    right = robotfuncs.CENTER + offset
+
+    for _ in range(shakes):
+        for pos in range(robotfuncs.CENTER, right, step):
+            robotfuncs.moveHeadH(servo, pos)
+            time.sleep(delay)
+        for pos in range(right, robotfuncs.CENTER, -step):
+            robotfuncs.moveHeadH(servo, pos)
+            time.sleep(delay)
+    
+    robotfuncs.moveHeadH(servo, robotfuncs.CENTER)
+
 
 if __name__ == "__main__":
     servo = robotfuncs.connect()
-    nod_yes(servo)
+    shake_no(servo)
