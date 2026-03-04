@@ -32,6 +32,9 @@ def shake_no(servo, shakes=2, offset=1000, step=50, delay=0.02):
     
     robotfuncs.moveHeadH(servo, robotfuncs.CENTER)
 
+def raise_arm(servo):
+    robotfuncs.move(servo, rShouldV, 8000)
+
 
 if __name__ == "__main__":
     servo = robotfuncs.connect()
