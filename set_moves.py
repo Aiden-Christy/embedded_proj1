@@ -39,9 +39,28 @@ def shake_no(servo, shakes=2, offset=1000, step=50, delay=0.01):
     robotfuncs.moveHeadH(servo, robotfuncs.CENTER)
 
 def raise_arm(servo):
-    robotfuncs.move(servo, rShouldV, 8000)
+    robotfuncs.move(servo, "rShoulderV", 8000)
+    robotfuncs.move(servo, "rShoulderH", 8000)
+    time.sleep(2)
+    robotfuncs.armNeutral(servo)
+
+def dance(servo):
+    nod_yes(servo)
+    robotfuncs.drive(servo, 6800, 6800)
+    time.sleep(1)
+    robotfuncs.drive(servo, 5200, 5200)
+    time.sleep(1)
+    robotfuncs.stop(servo)
+    
+    nod_yes(servo)
+    robotfuncs.drive(servo, 6800, 6800)
+    time.sleep(1)
+    robotfuncs.drive(servo, 5200, 5200)
+    time.sleep(1)
+    robotfuncs.stop(servo)
+
 
 
 if __name__ == "__main__":
     servo = robotfuncs.connect()
-    shake_no(servo)
+    dance(servo)
