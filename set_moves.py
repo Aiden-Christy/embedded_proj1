@@ -45,19 +45,32 @@ def raise_arm(servo):
     robotfuncs.armNeutral(servo)
 
 def dance(servo):
-    nod_yes(servo)
+    robotfuncs.move(servo, "rShoulderV", 8000)
+    robotfuncs.move(servo, "lShoulderV", 4000)
+
     robotfuncs.drive(servo, 6800, 6800)
+    robotfuncs.move(servo, "rShoulderH", 8000)
+    robotfuncs.move(servo, "lShoulderH", 8000)
+    nod_yes(servo)
     time.sleep(1)
     robotfuncs.drive(servo, 5200, 5200)
+    robotfuncs.move(servo, "rShoulderH", 4000)
+    robotfuncs.move(servo, "lShoulderH", 4000)
     time.sleep(1)
     robotfuncs.stop(servo)
     
-    nod_yes(servo)
     robotfuncs.drive(servo, 6800, 6800)
+    robotfuncs.move(servo, "rShoulderH", 8000)
+    robotfuncs.move(servo, "lShoulderH", 8000)
     time.sleep(1)
     robotfuncs.drive(servo, 5200, 5200)
+    robotfuncs.move(servo, "rShoulderH", 4000)
+    robotfuncs.move(servo, "lShoulderH", 4000)
+    nod_yes(servo)
     time.sleep(1)
     robotfuncs.stop(servo)
+    robotfuncs.armNeutral(servo)
+    robotfuncs.armNeutral(servo, "l")
 
 
 
