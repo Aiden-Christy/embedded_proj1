@@ -1,794 +1,514 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Robot Joystick Control</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TANGO // CONTROL</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/nipplejs"></script>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --panel: #111418;
+    --border: #1e2530;
+    --accent: #00e5ff;
+    --accent2: #ff3d00;
+    --text: #c8d6e5;
+    --dim: #4a5568;
+    --mono: 'Share Tech Mono', monospace;
+    --head: 'Barlow Condensed', sans-serif;
+  }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: #fff;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            touch-action: none;
-        }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .header {
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, #ffffff04 39px, #ffffff04 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, #ffffff04 39px, #ffffff04 40px);
+  }
 
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
+  header {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
 
-        .status {
-            font-size: 14px;
-            opacity: 0.9;
-        }
+  header h1 {
+    font-family: var(--head);
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: 0.15em;
+    color: #fff;
+    text-transform: uppercase;
+  }
 
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #4CAF50;
-            margin-right: 5px;
-            animation: pulse 2s infinite;
-        }
+  header h1 span { color: var(--accent); }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+  #status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+    display: inline-block;
+    margin-right: 8px;
+  }
 
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            position: relative;
-        }
+  #status-label {
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
 
-        .joystick-and-buttons-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 30px;
-            margin: 20px auto;
-            max-width: 900px;
-        }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
 
-        .left-side {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 16px;
+    position: relative;
+  }
 
-        .right-side {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+  .card-label {
+    font-family: var(--head);
+    font-weight: 600;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
 
-        .joystick-container {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            flex-shrink: 0;
-        }
+  .card-label::before {
+    content: '// ';
+    color: var(--accent);
+  }
 
-        .joystick-outer {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5),
-                        inset 0 0 20px rgba(0, 0, 0, 0.3);
-        }
+  /* Joystick — wrapper gives breathing room above the circle so
+     the top half is fully reachable on touch screens              */
+  #zone-wrapper {
+    padding: 24px 0 12px;
+  }
 
-        .joystick-center-marker {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px dashed rgba(255, 255, 255, 0.3);
-        }
+  #zone {
+    width: 220px;
+    height: 220px;
+    margin: 0 auto;
+    background: radial-gradient(circle at center, #151b23 0%, #0d1117 100%);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    position: relative;
+    touch-action: none;   /* stops browser scroll stealing the drag */
+  }
 
-        .joystick-inner {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 4px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-            cursor: pointer;
-            transition: box-shadow 0.2s;
-            touch-action: none;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
+  /* crosshair lines */
+  #zone::before, #zone::after {
+    content: '';
+    position: absolute;
+    background: var(--border);
+  }
+  #zone::before { width: 1px; height: 100%; left: 50%; top: 0; }
+  #zone::after  { width: 100%; height: 1px; top: 50%; left: 0; }
 
-        .joystick-inner:active {
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
-        }
+  /* Sliders */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
 
-        .joystick-inner::before {
-            content: '';
-            position: absolute;
-            top: 20%;
-            left: 20%;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            filter: blur(10px);
-        }
+  .slider-row:last-child { margin-bottom: 0; }
 
-        .direction-indicators {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
+  .slider-name {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    width: 52px;
+    flex-shrink: 0;
+  }
 
-        .direction-label {
-            position: absolute;
-            font-size: 14px;
-            font-weight: bold;
-            opacity: 0.6;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+  input[type=range] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
 
-        .dir-up { top: -30px; left: 50%; transform: translateX(-50%); }
-        .dir-down { bottom: -30px; left: 50%; transform: translateX(-50%); }
-        .dir-left { left: -50px; top: 50%; transform: translateY(-50%); }
-        .dir-right { right: -50px; top: 50%; transform: translateY(-50%); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
 
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
+  input[type=range]:active::-webkit-slider-thumb {
+    transform: scale(1.4);
+  }
 
-        .btn {
-            padding: 15px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            white-space: normal;
-            text-align: center;
-            line-height: 1.3;
-            min-width: 100px;
-        }
+  .slider-val {
+    font-size: 0.7rem;
+    color: var(--accent);
+    width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+  }
 
-        .btn-stop {
-            background: #f44336;
-            color: white;
-            font-size: 16px;
-            padding: 20px 15px;
-            height: 300px;
-            width: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+  /* Stop button */
+  #stop-btn {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    font-family: var(--head);
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s, box-shadow 0.15s;
+    margin-bottom: 16px;
+  }
 
-        .btn-stop:active {
-            background: #d32f2f;
-            transform: scale(0.95);
-        }
+  #stop-btn:active {
+    background: var(--accent2);
+    color: #fff;
+    box-shadow: 0 0 20px var(--accent2);
+  }
 
-        .btn-home {
-            background: #2196F3;
-            color: white;
-            padding: 12px 30px;
-        }
+  /* Telemetry bar */
+  #telem {
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 0.05em;
+    text-align: center;
+    line-height: 1.8;
+    margin-bottom: 16px;
+  }
 
-        .btn-home:active {
-            background: #1976D2;
-            transform: scale(0.95);
-        }
+  #telem span { color: var(--text); }
 
-        .btn-voice {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 12px;
-            font-size: 13px;
-            width: 100px;
-            height: 68px;
-        }
+  /* Chat */
+  #chat-log {
+    height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-right: 4px;
+  }
 
-        .btn-voice:active {
-            background: linear-gradient(135deg, #5568d3 0%, #63398d 100%);
-            transform: scale(0.95);
-        }
+  #chat-log::-webkit-scrollbar { width: 4px; }
+  #chat-log::-webkit-scrollbar-track { background: transparent; }
+  #chat-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-        .btn-voice:hover {
-            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
-        }
+  .msg {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    letter-spacing: 0.03em;
+  }
 
-        .info-panel {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            min-width: 250px;
-            text-align: center;
-        }
+  .msg.user {
+    align-self: flex-end;
+    background: #0d2233;
+    border: 1px solid #1a3a52;
+    color: var(--accent);
+  }
 
-        .sliders-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 20px auto;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 10px;
-        }
+  .msg.robot {
+    align-self: flex-start;
+    background: #131a14;
+    border: 1px solid #1e3020;
+    color: #7dff8a;
+  }
 
-        .slider-group {
-            margin-bottom: 20px;
-        }
+  .msg.robot .actions {
+    margin-top: 6px;
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+  }
 
-        .slider-group:last-child {
-            margin-bottom: 0;
-        }
+  .msg.robot .actions span {
+    background: #1e2530;
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-right: 4px;
+    display: inline-block;
+    margin-top: 2px;
+  }
 
-        .slider-label {
-            display: block;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.9;
-        }
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+  }
 
-        .slider {
-            width: 100%;
-            height: 8px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-        }
+  #chat-input {
+    flex: 1;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
 
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
+  #chat-input:focus { border-color: var(--accent); }
+  #chat-input::placeholder { color: var(--dim); }
 
-        .slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
+  #chat-send {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--head);
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    padding: 9px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.15s;
+  }
 
-        .slider:active::-webkit-slider-thumb {
-            box-shadow: 0 0 10px rgba(102, 126, 234, 0.8);
-        }
+  #chat-send:hover { background: #001a22; }
+  #chat-send:active { background: var(--accent); color: #000; }
+  #chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        .slider:active::-moz-range-thumb {
-            box-shadow: 0 0 10px rgba(102, 126, 234, 0.8);
-        }
+  .typing {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+    animation: blink 1s infinite;
+  }
 
-        .slider-value {
-            display: inline-block;
-            margin-top: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            opacity: 0.7;
-        }
-
-        .info-value {
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-        }
-
-        .footer {
-            padding: 10px;
-            text-align: center;
-            font-size: 12px;
-            opacity: 0.7;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        /* Mobile optimizations */
-        @media (max-width: 768px) {
-            .joystick-and-buttons-container {
-                flex-direction: column;
-                gap: 20px;
-            }
-
-            .left-side {
-                order: 3;
-            }
-
-            .joystick-container {
-                order: 1;
-                width: 250px;
-                height: 250px;
-            }
-
-            .right-side {
-                order: 2;
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .btn-stop {
-                width: 200px;
-                height: 60px;
-            }
-
-            .btn-voice {
-                width: 110px;
-                height: 60px;
-            }
-
-            .joystick-inner {
-                width: 100px;
-                height: 100px;
-            }
-
-            .header h1 {
-                font-size: 20px;
-            }
-        }
-
-        /* Landscape mobile */
-        @media (max-height: 500px) {
-            .joystick-container {
-                width: 200px;
-                height: 200px;
-            }
-
-            .main-content {
-                padding: 10px;
-            }
-
-            .info-panel {
-                margin-top: 10px;
-                padding: 10px;
-            }
-        }
-    </style>
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+</style>
 </head>
 <body>
-    <div class="header">
-        <h1>🤖 Robot Control</h1>
-        <div class="status">
-            <span class="status-indicator"></span>
-            <span id="connection-status">Connected</span>
-        </div>
-    </div>
 
-    <div class="main-content">
-        <div class="joystick-and-buttons-container">
-            <!-- Left side: Emergency Stop -->
-            <div class="left-side">
-                <button class="btn btn-stop" id="stop-btn">⏹<br>Emergency<br>Stop</button>
-            </div>
+<header>
+  <h1>TAN<span>GO</span></h1>
+  <div>
+    <span id="status-dot"></span>
+    <span id="status-label">ONLINE</span>
+  </div>
+</header>
 
-            <!-- Center: Joystick -->
-            <div class="joystick-container">
-                <div class="joystick-outer">
-                    <div class="joystick-center-marker"></div>
-                    <div class="direction-indicators">
-                        <div class="direction-label dir-up">Forward</div>
-                        <div class="direction-label dir-down">Reverse</div>
-                        <div class="direction-label dir-left">Left</div>
-                        <div class="direction-label dir-right">Right</div>
-                    </div>
-                </div>
-                <div class="joystick-inner" id="joystick"></div>
-            </div>
+<div class="card">
+  <div class="card-label">Drive</div>
+  <!-- wrapper adds space above so the joystick top half is reachable -->
+  <div id="zone-wrapper">
+    <div id="zone"></div>
+  </div>
+</div>
 
-            <!-- Right side: Voice buttons -->
-            <div class="right-side">
-                <button class="btn btn-voice" id="voice-btn-1">🎤<br>Lifestyle</button>
-                <button class="btn btn-voice" id="voice-btn-2">💖<br>Charm</button>
-                <button class="btn btn-voice" id="voice-btn-3">🤖<br>Soul</button>
-                <button class="btn btn-voice" id="voice-btn-4">🍪<br>Cookies</button>
-            </div>
-        </div>
+<div class="card">
+  <div class="card-label">Servos</div>
 
-        <div class="sliders-container">
-            <div class="slider-group">
-                <label class="slider-label">Head Horizontal</label>
-                <input type="range" id="headH-slider" min="4000" max="8000" value="6000" class="slider">
-                <span class="slider-value" id="headH-value">6000</span>
-            </div>
-            
-            <div class="slider-group">
-                <label class="slider-label">Head Vertical</label>
-                <input type="range" id="headV-slider" min="4000" max="8000" value="6000" class="slider">
-                <span class="slider-value" id="headV-value">6000</span>
-            </div>
-            
-            <div class="slider-group">
-                <label class="slider-label">Waist</label>
-                <input type="range" id="waist-slider" min="4000" max="8000" value="6000" class="slider">
-                <span class="slider-value" id="waist-value">6000</span>
-            </div>
-        </div>
+  <div class="slider-row">
+    <span class="slider-name">HEAD H</span>
+    <input type="range" min="-1" max="1" step="0.01" value="0" id="headH">
+    <span class="slider-val" id="headH-val">0.00</span>
+  </div>
 
-        <div class="controls">
-            <button class="btn btn-home" id="home-btn">🏠 Home</button>
-        </div>
+  <div class="slider-row">
+    <span class="slider-name">HEAD V</span>
+    <input type="range" min="-1" max="1" step="0.01" value="0" id="headV">
+    <span class="slider-val" id="headV-val">0.00</span>
+  </div>
 
-        <div class="info-panel">
-            <div class="info-row">
-                <span class="info-label">X Position:</span>
-                <span class="info-value" id="x-value">0.00</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Y Position:</span>
-                <span class="info-value" id="y-value">0.00</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Distance:</span>
-                <span class="info-value" id="distance-value">0.00</span>
-            </div>
-        </div>
-    </div>
+  <div class="slider-row">
+    <span class="slider-name">WAIST</span>
+    <input type="range" min="-1" max="1" step="0.01" value="0" id="waist">
+    <span class="slider-val" id="waist-val">0.00</span>
+  </div>
+</div>
 
-    <div class="footer">
-        Use joystick to control robot • Arcade drive mode
-    </div>
+<button id="stop-btn">⬛ EMERGENCY STOP</button>
 
-    <script>
-        // Joystick control
-        const joystick = document.getElementById('joystick');
-        const container = document.querySelector('.joystick-container');
-        const outer = document.querySelector('.joystick-outer');
-        
-        let isDragging = false;
-        let centerX = 0;
-        let centerY = 0;
-        let maxRadius = 0;
-        let currentX = 0;
-        let currentY = 0;
-        
-        // Calculate boundaries
-        function updateBoundaries() {
-            const containerRect = container.getBoundingClientRect();
-            const joystickRect = joystick.getBoundingClientRect();
-            
-            centerX = containerRect.width / 2;
-            centerY = containerRect.height / 2;
-            maxRadius = (containerRect.width - joystickRect.width) / 2;
-        }
-        
-        updateBoundaries();
-        window.addEventListener('resize', updateBoundaries);
-        
-        // Get position from event (works for both mouse and touch)
-        function getEventPosition(e) {
-            if (e.touches && e.touches.length > 0) {
-                return {
-                    x: e.touches[0].clientX,
-                    y: e.touches[0].clientY
-                };
-            }
-            return {
-                x: e.clientX,
-                y: e.clientY
-            };
-        }
-        
-        // Update joystick position
-        function updateJoystickPosition(clientX, clientY) {
-            const containerRect = container.getBoundingClientRect();
-            
-            // Calculate position relative to center
-            let deltaX = clientX - containerRect.left - centerX;
-            let deltaY = clientY - containerRect.top - centerY;
-            
-            // Calculate distance from center
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            
-            // Constrain to circle boundary
-            if (distance > maxRadius) {
-                const angle = Math.atan2(deltaY, deltaX);
-                deltaX = Math.cos(angle) * maxRadius;
-                deltaY = Math.sin(angle) * maxRadius;
-            }
-            
-            // Update joystick visual position
-            joystick.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-            
-            // Calculate normalized values (-1 to 1)
-            currentX = deltaX / maxRadius;
-            currentY = -deltaY / maxRadius; // Invert Y so up is positive
-            
-            // Update display
-            updateDisplay();
-            
-            // Send to server
-            sendJoystickPosition();
-        }
-        
-        // Return joystick to center
-        function returnToCenter() {
-            joystick.style.transform = 'translate(-50%, -50%)';
-            currentX = 0;
-            currentY = 0;
-            updateDisplay();
-            sendJoystickPosition();
-        }
-        
-        // Start dragging
-        function startDrag(e) {
-            e.preventDefault();
-            isDragging = true;
-            const pos = getEventPosition(e);
-            updateJoystickPosition(pos.x, pos.y);
-        }
-        
-        // During drag
-        function drag(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            const pos = getEventPosition(e);
-            updateJoystickPosition(pos.x, pos.y);
-        }
-        
-        // End drag
-        function endDrag(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            isDragging = false;
-            returnToCenter();
-        }
-        
-        // Mouse events
-        joystick.addEventListener('mousedown', startDrag);
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', endDrag);
-        
-        // Touch events
-        joystick.addEventListener('touchstart', startDrag);
-        document.addEventListener('touchmove', drag, { passive: false });
-        document.addEventListener('touchend', endDrag);
-        
-        // Update display values
-        function updateDisplay() {
-            document.getElementById('x-value').textContent = currentX.toFixed(2);
-            document.getElementById('y-value').textContent = currentY.toFixed(2);
-            
-            const distance = Math.sqrt(currentX * currentX + currentY * currentY);
-            document.getElementById('distance-value').textContent = distance.toFixed(2);
-        }
-        
-        // Send joystick position to server
-        let lastSendTime = 0;
-        const sendInterval = 50; // Send every 50ms (20Hz)
-        
-        function sendJoystickPosition() {
-            const now = Date.now();
-            if (now - lastSendTime < sendInterval) {
-                return; // Throttle requests
-            }
-            lastSendTime = now;
-            
-            fetch('/api/joystick', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    x: currentX,
-                    y: currentY
-                })
-            })
-            .catch(err => {
-                console.error('Error sending joystick position:', err);
-                updateConnectionStatus(false);
-            });
-        }
-        
-        // Button controls
-        document.getElementById('stop-btn').addEventListener('click', () => {
-            fetch('/api/stop', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Stop command sent:', data);
-                returnToCenter();
-                // Reset sliders to center
-                document.getElementById('headH-slider').value = 6000;
-                document.getElementById('headV-slider').value = 6000;
-                document.getElementById('waist-slider').value = 6000;
-                updateSliderDisplays();
-            })
-            .catch(err => console.error('Error stopping:', err));
-        });
-        
-        document.getElementById('home-btn').addEventListener('click', () => {
-            if (confirm('Move all servos to home position?')) {
-                fetch('/api/home', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Home command sent:', data);
-                })
-                .catch(err => console.error('Error homing:', err));
-            }
-        });
+<div id="telem">
+  THROTTLE <span id="t-throttle">0.00</span> &nbsp;|&nbsp;
+  TURN <span id="t-turn">0.00</span> &nbsp;|&nbsp;
+  TX <span id="t-count">0</span>
+</div>
 
-        // Slider controls
-        const headHSlider = document.getElementById('headH-slider');
-        const headVSlider = document.getElementById('headV-slider');
-        const waistSlider = document.getElementById('waist-slider');
+<div class="card">
+  <div class="card-label">Talk to Tango</div>
+  <div id="chat-log"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Say something to Tango..." autocomplete="off">
+    <button id="chat-send">Send</button>
+  </div>
+</div>
 
-        function updateSliderDisplays() {
-            document.getElementById('headH-value').textContent = headHSlider.value;
-            document.getElementById('headV-value').textContent = headVSlider.value;
-            document.getElementById('waist-value').textContent = waistSlider.value;
-        }
+<script>
+const BASE = window.location.origin;
+let txCount = 0;
 
-        function sendSliderValues() {
-            fetch('/api/sliders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    headH: parseInt(headHSlider.value),
-                    headV: parseInt(headVSlider.value),
-                    waist: parseInt(waistSlider.value)
-                })
-            })
-            .catch(err => console.error('Error sending slider values:', err));
-        }
+function post(path, data) {
+  fetch(BASE + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).catch(() => {
+    document.getElementById('status-dot').style.background = '#ff3d00';
+    document.getElementById('status-dot').style.boxShadow = '0 0 8px #ff3d00';
+    document.getElementById('status-label').textContent = 'ERROR';
+    document.getElementById('status-label').style.color = '#ff3d00';
+  });
+  document.getElementById('t-count').textContent = ++txCount;
+}
 
-        // Update displays and send values when sliders change
-        headHSlider.addEventListener('input', () => {
-            updateSliderDisplays();
-            sendSliderValues();
-        });
+// ── Joystick ──────────────────────────────────────────────────────────────────
+var manager = nipplejs.create({
+  zone: document.getElementById('zone'),
+  mode: 'static',
+  position: { left: '50%', top: '50%' },
+  color: '#00e5ff',
+  size: 80
+});
 
-        headVSlider.addEventListener('input', () => {
-            updateSliderDisplays();
-            sendSliderValues();
-        });
+let lastSend = 0;
 
-        waistSlider.addEventListener('input', () => {
-            updateSliderDisplays();
-            sendSliderValues();
-        });
+manager.on('move', (evt, data) => {
+  let now = Date.now();
+  if (now - lastSend < 80) return;
+  lastSend = now;
+  const throttle = -data.vector.y;  // negate — up on stick = forward
+  const turn = data.vector.x;
+  document.getElementById('t-throttle').textContent = throttle.toFixed(2);
+  document.getElementById('t-turn').textContent = turn.toFixed(2);
+  post("/drive", { throttle, turn });
+});
 
-        // Initialize slider displays
-        updateSliderDisplays();
+manager.on('end', () => {
+  document.getElementById('t-throttle').textContent = '0.00';
+  document.getElementById('t-turn').textContent = '0.00';
+  post("/stop", {});
+});
 
-        // Voice button controls
-        document.getElementById('voice-btn-1').addEventListener('click', () => {
-            fetch('/api/voice/1', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => console.log('Voice line 1:', data.line))
-            .catch(err => console.error('Error playing voice:', err));
-        });
+// ── Sliders ───────────────────────────────────────────────────────────────────
+["headH", "headV", "waist"].forEach(id => {
+  const el = document.getElementById(id);
+  const valEl = document.getElementById(id + '-val');
+  el.oninput = e => {
+    const val = parseFloat(e.target.value);
+    valEl.textContent = val.toFixed(2);
+    if (id === "waist")
+      post("/waist", { waist: val });
+    else
+      post("/head", { [id]: val });
+  };
+});
 
-        document.getElementById('voice-btn-2').addEventListener('click', () => {
-            fetch('/api/voice/2', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => console.log('Voice line 2:', data.line))
-            .catch(err => console.error('Error playing voice:', err));
-        });
+// ── Stop button ───────────────────────────────────────────────────────────────
+document.getElementById('stop-btn').onclick = () => post("/stop", {});
 
-        document.getElementById('voice-btn-3').addEventListener('click', () => {
-            fetch('/api/voice/3', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => console.log('Voice line 3:', data.line))
-            .catch(err => console.error('Error playing voice:', err));
-        });
+// ── Chat ──────────────────────────────────────────────────────────────────────
+const chatLog   = document.getElementById('chat-log');
+const chatInput = document.getElementById('chat-input');
+const chatSend  = document.getElementById('chat-send');
 
-        document.getElementById('voice-btn-4').addEventListener('click', () => {
-            fetch('/api/voice/4', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => console.log('Voice line 4:', data.line))
-            .catch(err => console.error('Error playing voice:', err));
-        });
-        
-        // Connection status
-        function updateConnectionStatus(connected) {
-            const indicator = document.querySelector('.status-indicator');
-            const statusText = document.getElementById('connection-status');
-            
-            if (connected) {
-                indicator.style.background = '#4CAF50';
-                statusText.textContent = 'Connected';
-            } else {
-                indicator.style.background = '#f44336';
-                statusText.textContent = 'Disconnected';
-            }
-        }
-        
-        // Check connection status periodically
-        setInterval(() => {
-            fetch('/api/status')
-                .then(response => response.json())
-                .then(data => {
-                    updateConnectionStatus(data.connected);
-                })
-                .catch(err => {
-                    updateConnectionStatus(false);
-                });
-        }, 2000);
-        
-        // Initialize
-        updateDisplay();
-        console.log('Robot joystick controller initialized');
-    </script>
+function appendMsg(text, who, actions) {
+  const div = document.createElement('div');
+  div.className = `msg ${who}`;
+  div.textContent = text;
+  if (actions && actions.length) {
+    const acts = document.createElement('div');
+    acts.className = 'actions';
+    actions.forEach(a => {
+      const s = document.createElement('span');
+      s.textContent = a;
+      acts.appendChild(s);
+    });
+    div.appendChild(acts);
+  }
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+async function sendChat() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  appendMsg(text, 'user');
+  chatInput.value = '';
+  chatSend.disabled = true;
+
+  const typing = document.createElement('div');
+  typing.className = 'typing';
+  typing.textContent = 'TANGO IS THINKING...';
+  chatLog.appendChild(typing);
+  chatLog.scrollTop = chatLog.scrollHeight;
+
+  try {
+    const res = await fetch(BASE + '/dialog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    chatLog.removeChild(typing);
+    if (data.speak) {
+      appendMsg(data.speak, 'robot', data.actions || []);
+    } else if (data.error) {
+      appendMsg('ERROR: ' + data.error, 'robot');
+    }
+  } catch (e) {
+    chatLog.removeChild(typing);
+    appendMsg('Could not reach Tango.', 'robot');
+  }
+
+  chatSend.disabled = false;
+  chatInput.focus();
+}
+
+chatSend.onclick = sendChat;
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
+</script>
 </body>
 </html>
