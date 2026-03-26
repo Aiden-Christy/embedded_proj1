@@ -1,0 +1,166 @@
+# ============================================================
+# Tango Dialog Script
+# CSCI 455 — Project 2
+# ============================================================
+
+# ============================================================
+# Definitions
+# ============================================================
+
+~greet:       [hello hi howdy "hi there" "hey tango" "hey robot" "good morning" "good evening"]
+~bye:         [bye goodbye "see you" "see ya" "good night" "take care" later]
+~affirm:      [yes yeah yep sure "of course" absolutely "sounds good" ok okay]
+~deny:        [no nope nah "no way" "not really"]
+~thanks:      [thanks "thank you" "thank you very much" thx "much appreciated"]
+~name_q:      ["what is my name" "do you know my name" "do you remember my name" "who am i"]
+~age_q:       ["how old am i" "what is my age" "do you know my age"]
+~how_are_you: ["how are you" "how are you doing" "how do you feel" "are you okay"]
+~what_can_do: ["what can you do" "what are your abilities" "show me what you can do"]
+~compliment:  ["you are great" "you are awesome" "good robot" "well done" "nice job" "you are smart"]
+~insult:      ["you are bad" "you are stupid" "you are broken" "i hate you"]
+~dance_words: [dance boogie "do a dance" "dance for me" "show me a dance" "bust a move"]
+~arm_words:   ["raise your arm" "raise arm" "say hi"]
+~nod_words:   ["nod your head" nod "give me a nod"]
+~shake_words: ["shake your head" shake disagree]
+~weather:     ["how is the weather" "what is the weather" "is it nice outside"]
+~joke:        ["tell me a joke" "say something funny" "make me laugh"]
+~spin:        ["do a spin" "spin around" "turn around" "do a turn"]
+
+# ============================================================
+# Safety / Control
+# ============================================================
+
+u:([stop cancel quit]): OK. Stopping everything now. <stop>
+u:(help): I can greet you, remember your name and age, dance, wave, tell jokes, and more. Just talk to me!
+
+# ============================================================
+# Greeting flow
+# ============================================================
+
+u:(~greet): ["Hey there!" "Hello!" "Hi! Great to see you." "Howdy!"] <arm_raise>
+
+# After a greeting, u1 rules become active
+u1:(~affirm): Awesome! I love the enthusiasm. <head_yes>
+u1:(~deny): That is okay. I am still happy you are here. <head_no>
+u1:(my name is _): Great to meet you, $name! I will remember that. <head_yes>
+u1:(call me _): Got it! I will call you $name. <head_yes>
+
+# ============================================================
+# Name and age memory
+# ============================================================
+
+u:(my name is _): Nice to meet you, $name. <head_yes>
+u:(call me _): Sure thing! I will call you $name from now on. <head_yes>
+u:(i am _ years old): Got it. You are $age years old. I will remember that. <head_yes>
+u:(my age is _): Noted! You are $age years old. <head_yes>
+u:(~name_q): Your name is $name.
+u:(~age_q): You are $age years old.
+
+# ============================================================
+# How are you
+# ============================================================
+
+u:(~how_are_you): ["I am doing great thanks for asking!" "Feeling wonderful my servos are warmed up." "Pretty good! Ready to chat."] <head_yes>
+u1:(~affirm): Glad to hear it! <head_yes>
+u1:(~deny): Sorry to hear that. I hope talking to me helps a little. <head_no>
+u1:(not great): I am sorry. I hope things look up soon. <head_no>
+u1:(~thanks): Of course! That is what I am here for. <head_yes>
+
+# ============================================================
+# What can you do
+# ============================================================
+
+u:(~what_can_do): I can wave, dance, nod, shake my head, remember your name and age, and tell jokes. Try asking me! <arm_raise>
+
+# ============================================================
+# Compliments and insults
+# ============================================================
+
+u:(~compliment): ["Aw thank you!" "That is very kind!" "You just made my day!"] <head_yes> <arm_raise>
+u:(~insult): ["That hurts a little." "I am trying my best!" "Ouch. I still like you though."] <head_no>
+
+# ============================================================
+# Movement commands
+# ============================================================
+
+u:(~arm_words): ["Sure thing!" "On it!"] <arm_raise>
+u:(~nod_words): ["You got it." "Sure!"] <head_yes>
+u:(~shake_words): ["Hmm I disagree." "Nope!"] <head_no>
+u:(~dance_words): ["Let us go!" "Dance time!"] <dance90>
+u:(~spin): ["Spinning!" "Here goes!"] <dance90>
+u:(go forward): Moving forward! <forward>
+u:(go backward): Backing up! <backward>
+u:(turn left): Turning left! <turn_left>
+u:(turn right): Turning right! <turn_right>
+u:(go home): Returning to home position. <home>
+u:(center your head): Centering. <center_head>
+u:(open your gripper): Opening gripper. <open_gripper>
+u:(close your gripper): Closing gripper. <close_gripper>
+u:(wave at me): ["Hi there!" "Hello!"] <wave>
+
+# ============================================================
+# Jokes — nested scope
+# ============================================================
+
+u:(~joke): Why did the robot go on a diet? Because it had too many bytes. <head_yes>
+u1:(another): What do you call a sleeping robot? A rest API. <head_yes>
+u1:(one more): I would tell you a joke about construction but I am still working on it. <head_yes>
+u1:(keep going): That is all my jokes for now. I need to download more. <head_no>
+
+# ============================================================
+# Weather
+# ============================================================
+
+u:(~weather): I do not have a weather sensor yet but I hear it is always nice inside. <head_yes>
+
+# ============================================================
+# Favorites — variable capture
+# ============================================================
+
+u:(my favorite color is _): $color is a great color! I will remember that. <head_yes>
+u:(my favorite food is _): Mmm $food! I wish I could taste it. <head_yes>
+u:(my favorite animal is _): A $animal! Excellent taste. <head_yes>
+u:(what is my favorite color): Your favorite color is $color. <head_yes>
+u:(what is my favorite food): Your favorite food is $food. <head_yes>
+u:(what is my favorite animal): Your favorite animal is a $animal. <head_yes>
+
+# ============================================================
+# Feelings check-in — nested scope u1 / u2 / u3
+# ============================================================
+
+u:(let us talk): Sure I am all ears. What is on your mind?
+u1:(i am happy): That is wonderful to hear! <head_yes> <arm_raise>
+u1:(i am sad): I am sorry. Want to talk about it? <head_no>
+u2:(~affirm): I am listening. Tell me more.
+u2:(no thanks): That is okay. Sometimes a good dance helps. Want me to dance? <head_yes>
+u3:(yes please): ["Here we go!" "Dance time!"] <dance90>
+u3:(no thanks): Fair enough. I am here if you need me. <head_yes>
+u1:(i am tired): You should get some rest. I will keep the lights on. <head_no>
+u1:(i am excited): ["Me too!" "Yes let us celebrate!"] <head_yes> <arm_raise>
+
+# ============================================================
+# Small talk
+# ============================================================
+
+u:(what is your name): My name is Tango! Nice to meet you. <arm_raise>
+u:(where are you from): I was built right here in the lab. Pretty humble origins. <head_yes>
+u:(how old are you): I am ageless. But my firmware was updated recently so I feel brand new. <head_yes>
+u:(do you like music): I love music! Anything with a good beat makes me want to dance. <dance90>
+u:(["do you sleep" "do you dream"]): I power down sometimes but I do not dream. At least not yet. <head_no>
+u:(are you a real robot): As real as it gets! Servos sensors and all. <arm_raise>
+u:(what do you think about humans): I think humans are fascinating. Especially the ones who build robots. <head_yes>
+u:(do you like homework): [no nope "absolutely not"] <head_no>
+
+# ============================================================
+# Thanks and goodbye
+# ============================================================
+
+u:(~thanks): You are very welcome! <head_yes>
+u:(~bye): ["Goodbye! Come back soon." "See you later!" "It was great talking to you."] <arm_raise>
+
+# ============================================================
+# Catch-all utilities
+# ============================================================
+
+u:(i do not know): That is okay! Neither do I sometimes. <head_yes>
+u:(just testing): Looks like everything is working! <head_yes> <arm_raise>
